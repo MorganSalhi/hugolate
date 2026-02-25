@@ -1,10 +1,10 @@
 // app/leaderboard/page.tsx
 import { prisma } from "@/lib/prisma";
 import { getPoliceRank } from "@/lib/ranks";
-import { TrendingUp, Shield } from "lucide-react";
+import { TrendingUp, Shield, AlertCircle } from "lucide-react";
 
 export default async function LeaderboardPage() {
-    // On récupère les 20 meilleurs agents
+    // Récupération des 20 meilleurs agents avec tri par solde décroissant
     const users = await prisma.user.findMany({
         orderBy: {
             walletBalance: 'desc'
@@ -17,7 +17,9 @@ export default async function LeaderboardPage() {
             <header className="mb-10">
                 <div className="flex items-center gap-2 mb-2">
                     <Shield className="text-indigo-500" size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Unité d'Investigation HugoLate</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                        Unité d'Investigation HugoLate
+                    </span>
                 </div>
                 <h1 className="text-4xl font-black italic tracking-tighter">HIÉRARCHIE</h1>
                 <p className="text-slate-500 text-sm">Tableau d'avancement des effectifs selon les saisies de ₪.</p>
@@ -32,13 +34,15 @@ export default async function LeaderboardPage() {
                         return (
                             <div
                                 key={user.id}
-                                className={`flex items-center justify-between p-4 rounded-2xl bg-slate-900/50 border ${rank.border} backdrop-blur-sm relative overflow-hidden`}
+                                className={`flex items-center justify-between p-4 rounded-2xl bg-slate-900/40 border ${rank.border} backdrop-blur-sm relative overflow-hidden group`}
                             >
-                                {/* Effet spécial pour le numéro 1 */}
-                                {index === 0 && <div className="absolute inset-0 bg-indigo-500/5 animate-pulse" />}
+                                {/* Effet visuel pour le podium (Top 3) */}
+                                {index < 3 && (
+                                    <div className="absolute inset-0 bg-indigo-500/5 animate-pulse pointer-events-none" />
+                                )}
 
                                 <div className="flex items-center gap-4 relative z-10">
-                                    <span className={`text-lg font-mono font-black w-6 ${index < 3 ? 'text-indigo-500' : 'text-slate-700'}`}>
+                                    <span className={`text-lg font-mono font-black w-6 ${index < 3 ? 'text-indigo-400' : 'text-slate-700'}`}>
                                         #{index + 1}
                                     </span>
 
@@ -55,29 +59,31 @@ export default async function LeaderboardPage() {
                                 </div>
 
                                 <div className="text-right relative z-10">
-                                    <div className="flex items-center justify-end gap-1 text-xl font-mono font-bold text-white">
+                                    <div className="flex items-center justify-end gap-1 text-xl font-mono font-bold text-white leading-none">
                                         {user.walletBalance.toLocaleString()}
                                         <span className="text-xs text-slate-500 italic">₪</span>
                                     </div>
-                                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">Budget Alloué</p>
+                                    <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter mt-1">
+                                        Shekels cumulés
+                                    </p>
                                 </div>
                             </div>
                         );
                     })
                 ) : (
-                    <div className="text-center py-20 opacity-20">
+                    <div className="text-center py-20 border-2 border-dashed border-slate-900 rounded-3xl opacity-30">
                         <TrendingUp size={48} className="mx-auto mb-4" />
-                        <p className="uppercase font-black text-xs tracking-widest">Aucune donnée classifiée</p>
+                        <p className="uppercase font-black text-xs tracking-widest">Aucun agent répertorié</p>
                     </div>
                 )}
             </div>
 
-            <footer className="mt-12 p-6 border-t border-slate-900/50 opacity-40">
-                <p className="text-[10px] text-center leading-relaxed">
-                    LES GRADES SONT ATTRIBUÉS SELON LE DÉCRET N°2026-HUGO. <br />
-                    TOUTE RÉCLAMATION EST À ADRESSER AU COMMISSARIAT CENTRAL.
+            <div className="mt-12 p-5 bg-indigo-950/20 border border-indigo-900/30 rounded-2xl flex items-start gap-4">
+                <AlertCircle className="text-indigo-500 shrink-0" size={20} />
+                <p className="text-[11px] text-slate-400 leading-relaxed italic">
+                    "Note de service : Les promotions sont automatiques et basées sur votre flair d'enquêteur. Tout retard non signalé est une faute grave."
                 </p>
-            </footer>
+            </div>
         </div>
     );
 }

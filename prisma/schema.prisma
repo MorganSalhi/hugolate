@@ -1,7 +1,7 @@
 // prisma/schema.prisma
 datasource db {
   provider = "postgresql"
-  // On ne met plus de "url" ici !
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -12,20 +12,20 @@ model User {
   id            String   @id @default(cuid())
   name          String
   email         String   @unique
-  walletBalance Int      @default(1000) // Crédits de départ
+  walletBalance Int      @default(1000) // Crédits de départ en Shekels ₪
   bets          Bet[]
   createdAt     DateTime @default(now())
 }
 
 model Course {
-  id                String      @id @default(cuid())
-  subject           String      // Matière (ex: Économétrie)
-  professor         String      // Nom du prof
-  scheduledStartTime DateTime    // Heure de début officielle
-  actualArrivalTime  DateTime?   // Heure d'arrivée réelle d'Hugo
-  status            CourseStatus @default(OPEN)
-  bets              Bet[]
-  totalPot          Int         @default(0)
+  id                 String       @id @default(cuid())
+  subject            String       // Matière (ex: Bavure)
+  professor          String       // Nom du prof
+  scheduledStartTime DateTime     // Heure de début officielle
+  actualArrivalTime  DateTime?    // Heure d'arrivée réelle d'Hugo
+  status             CourseStatus @default(OPEN)
+  bets               Bet[]
+  totalPot           Int          @default(0)
 }
 
 enum CourseStatus {
@@ -35,14 +35,14 @@ enum CourseStatus {
 }
 
 model Bet {
-  id            String   @id @default(cuid())
-  userId        String
-  courseId      String
-  guessedTime   DateTime
-  pointsEarned  Int?     @default(0)
-  user          User     @relation(fields: [userId], references: [id])
-  course        Course   @relation(fields: [courseId], references: [id])
-  createdAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  courseId     String
+  guessedTime  DateTime
+  pointsEarned Int?     @default(0)
+  user         User     @relation(fields: [userId], references: [id])
+  course       Course   @relation(fields: [courseId], references: [id])
+  createdAt    DateTime @default(now())
 
   @@unique([userId, courseId])
 }
