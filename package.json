@@ -1,0 +1,36 @@
+{
+  "name": "hugolate",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
+    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/client": "^7.4.1",
+    "@prisma/config": "^7.4.1",
+    "dotenv": "^17.3.1",
+    "lucide-react": "^0.344.0",
+    "next": "^16.1.6",
+    "pg": "^8.11.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.51.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/pg": "^8.11.2",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "prisma": "^7.4.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3"
+  }
+}

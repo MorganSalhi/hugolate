@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 2, 6, 23;
+    --background-end-rgb: 15, 23, 42;
+}
+
+body {
+    color: rgb(var(--foreground-rgb));
+    background: radial-gradient(circle at top right, #1e1b4b, #020617 40%);
+    min-height: 100vh;
+}
+
+/* Scrollbar personnalisée pour le style Dark Univ */
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e1b4b;
+    border-radius: 10px;
+}
