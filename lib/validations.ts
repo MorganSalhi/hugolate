@@ -1,14 +1,22 @@
 // lib/validations.ts
 import { z } from "zod";
 
-export const TimeInputSchema = z.object({
-  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
-    message: "Le format doit être HH:mm (ex: 08:45)",
-  }),
+export const BetSchema = z.object({
+  time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Format HH:mm requis"),
+  amount: z.preprocess(
+    (val) => Number(val), 
+    z.number().min(1, "La mise minimale est de 1 ₪").max(10000, "Mise maximale 10 000 ₪")
+  ),
 });
 
 export const CreateCourseSchema = z.object({
   subject: z.string().min(2, "Le nom de la matière est requis"),
   professor: z.string().min(2, "Le nom du professeur est requis"),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Heure invalide"),
+});
+
+export const CreateUserSchema = z.object({
+  name: z.string().min(2, "Le nom est trop court"),
+  email: z.string().email("Email invalide"),
+  initialBalance: z.preprocess((val) => Number(val), z.number().min(0, "Le solde doit être positif")),
 });

@@ -11,7 +11,8 @@ model User {
   id            String   @id @default(cuid())
   name          String
   email         String   @unique
-  walletBalance Int      @default(1000) // Crédits de départ en Shekels ₪
+  password      String?  // Ajout pour la future authentification
+  walletBalance Int      @default(1000)
   bets          Bet[]
   createdAt     DateTime @default(now())
 }
@@ -38,6 +39,7 @@ model Bet {
   userId       String
   courseId     String
   guessedTime  DateTime
+  amount       Int      @default(100) // Nouveau : Stocke la somme misée
   pointsEarned Int?     @default(0)
   user         User     @relation(fields: [userId], references: [id])
   course       Course   @relation(fields: [courseId], references: [id])

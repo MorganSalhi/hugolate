@@ -1,46 +1,69 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calculateHugoScore, timeToMinutes } from "@/lib/scoring";
+import { calculateHugoScore } from "@/lib/scoring";
 
 export async function POST(req: Request) {
-  const { courseId, actualTime } = await req.json();
+  try {
+    const { courseId, actualTime } = await req.json();
 
-  const course = await prisma.course.findUnique({
-    where: { id: courseId },
-    include: { bets: true },
-  });
+    // 1. Validation de l'entrée (Format HH:mm)
+    if (!courseId || !actualTime || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(actualTime)) {
+      return NextResponse.json({ error: "Données de temps invalides" }, { status: 400 });
+    }
 
-  if (!course) return NextResponse.json({ error: "Cours non trouvé" }, { status: 404 });
+    // 2. Récupération du dossier et des rapports (paris)
+    const course = await prisma.course.findUnique({
+      where: { id: courseId },
+      include: { bets: true },
+    });
 
-  const [actualH, actualM] = actualTime.split(":").map(Number);
-  const actualMinutes = actualH * 60 + actualM;
+    if (!course) {
+      return NextResponse.json({ error: "Dossier d'enquête introuvable" }, { status: 404 });
+    }
 
-  // Distribution des gains
-  const updates = course.bets.map(async (bet) => {
-    const guessedDate = new Date(bet.guessedTime);
-    const guessedMinutes = guessedDate.getHours() * 60 + guessedDate.getMinutes();
-    
-    // Utilisation de notre algo exponentiel
-    const pointsGagnes = calculateHugoScore(actualMinutes, guessedMinutes);
+    if (course.status === "FINISHED") {
+      return NextResponse.json({ error: "Cette enquête est déjà classée et archivée" }, { status: 400 });
+    }
 
-    return prisma.$transaction([
-      prisma.bet.update({
-        where: { id: bet.id },
-        data: { pointsEarned: pointsGagnes },
-      }),
-      prisma.user.update({
-        where: { id: bet.userId },
-        data: { walletBalance: { increment: pointsGagnes } },
+    // 3. Calcul du temps réel en minutes pour le verdict
+    const [actualH, actualM] = actualTime.split(":").map(Number);
+    const actualMinutes = actualH * 60 + actualM;
+
+    // 4. Préparation de la transaction globale
+    // On crée une liste d'opérations : mises à jour des paris + mises à jour des portefeuilles
+    const betUpdates = course.bets.flatMap((bet) => {
+      const guessedDate = new Date(bet.guessedTime);
+      const guessedMinutes = guessedDate.getHours() * 60 + guessedDate.getMinutes();
+      
+      const pointsGagnes = calculateHugoScore(actualMinutes, guessedMinutes);
+
+      return [
+        prisma.bet.update({
+          where: { id: bet.id },
+          data: { pointsEarned: pointsGagnes },
+        }),
+        prisma.user.update({
+          where: { id: bet.userId },
+          data: { walletBalance: { increment: pointsGagnes } },
+        }),
+      ];
+    });
+
+    // 5. Exécution de la transaction finale : Tout ou rien
+    await prisma.$transaction([
+      ...betUpdates,
+      prisma.course.update({
+        where: { id: courseId },
+        data: { 
+          status: "FINISHED",
+          actualArrivalTime: new Date(new Date().setHours(actualH, actualM, 0, 0))
+        },
       }),
     ]);
-  });
 
-  await Promise.all(updates);
-  
-  await prisma.course.update({
-    where: { id: courseId },
-    data: { status: "FINISHED" },
-  });
-
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Erreur de résolution:", error);
+    return NextResponse.json({ error: "Échec de la distribution des Shekels ₪" }, { status: 500 });
+  }
 }
