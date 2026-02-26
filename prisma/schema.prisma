@@ -1,20 +1,24 @@
 // prisma/schema.prisma
 datasource db {
   provider = "postgresql"
+  // L'URL est gérée exclusivement par prisma.config.ts
 }
 
 generator client {
   provider = "prisma-client-js"
+  // Optionnel pour Prisma 7 : support des adaptateurs
+  previewFeatures = ["driverAdapters"]
 }
 
 model User {
-  id            String   @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String
-  email         String   @unique
-  password      String?  // Ajout pour la future authentification
-  walletBalance Int      @default(1000)
+  email         String     @unique
+  password      String?    
+  walletBalance Int        @default(1000)
   bets          Bet[]
-  createdAt     DateTime @default(now())
+  items         UserItem[] // Relation pour l'inventaire
+  createdAt     DateTime   @default(now())
 }
 
 model Course {
@@ -39,11 +43,23 @@ model Bet {
   userId       String
   courseId     String
   guessedTime  DateTime
-  amount       Int      @default(100) // Nouveau : Stocke la somme misée
+  amount       Int      @default(100) 
   pointsEarned Int?     @default(0)
+  appliedItem  String?  // Stocke l'item utilisé (ex: "VEST")
   user         User     @relation(fields: [userId], references: [id])
   course       Course   @relation(fields: [courseId], references: [id])
   createdAt    DateTime @default(now())
 
   @@unique([userId, courseId])
+}
+
+model UserItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemType  String   // "VEST", "MAGNIFIER", "WARRANT"
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemType])
 }
