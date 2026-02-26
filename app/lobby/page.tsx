@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Clock, Coins, TrendingUp, Loader2, ShieldAlert } from "lucide-react";
-import { TimeInputSchema } from "@/lib/validations";
+import { BetSchema } from "@/lib/validations";
 import { getPoliceRank } from "@/lib/ranks";
 
 export default function LobbyDeParis() {
