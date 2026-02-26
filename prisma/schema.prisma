@@ -17,6 +17,8 @@ model User {
   bets          Bet[]
   items         UserItem[] // Relation avec l'arsenal
   createdAt     DateTime   @default(now())
+  currentStreak Int        @default(0) // Nombre d'enquêtes réussies d'affilée
+  bestStreak    Int        @default(0)
 }
 
 model Course {

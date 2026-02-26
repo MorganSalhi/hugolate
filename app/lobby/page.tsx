@@ -11,7 +11,8 @@ import {
     ShieldAlert, 
     Shield, 
     Search, 
-    Gavel 
+    Gavel,
+    Flame // Ajout de la flamme pour la série
 } from "lucide-react";
 import { BetSchema } from "@/lib/validations";
 import { getPoliceRank } from "@/lib/ranks";
@@ -101,8 +102,6 @@ export default function LobbyDeParis() {
     const RankIcon = currentRank.icon;
 
     const availableItems = user?.items?.filter((i: any) => i.quantity > 0) || [];
-
-    // Vérifier si l'agent possède la loupe pour afficher l'indice
     const hasMagnifier = availableItems.some((i: any) => i.itemType === "MAGNIFIER");
 
     return (
@@ -115,8 +114,15 @@ export default function LobbyDeParis() {
                 <ShieldAlert className="text-indigo-900/30" size={40} />
             </header>
 
-            {/* Portefeuille et Grade */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6 flex justify-between items-center shadow-2xl">
+            {/* Portefeuille, SÉRIE et Grade */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6 flex justify-between items-center shadow-2xl relative overflow-hidden">
+                {/* Décoration de série en fond si l'agent est en feu */}
+                {user?.currentStreak >= 3 && (
+                    <div className="absolute -right-4 -top-4 opacity-[0.03] rotate-12">
+                        <Flame size={120} className="text-orange-500" />
+                    </div>
+                )}
+
                 <div className="flex items-center gap-3">
                     <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-400">
                         <Coins size={20} />
@@ -128,6 +134,30 @@ export default function LobbyDeParis() {
                         </p>
                     </div>
                 </div>
+
+                {/* NOUVEAU : INDICATEUR DE SÉRIE (STREAK) */}
+                <div className="flex flex-col items-center px-4 border-x border-slate-800/50">
+                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Série</p>
+                    <div className="flex items-center gap-1">
+                        <span className={`text-lg font-black font-mono ${user?.currentStreak > 0 ? 'text-orange-500' : 'text-slate-700'}`}>
+                            {user?.currentStreak || 0}
+                        </span>
+                        <Flame 
+                            size={18} 
+                            className={`${
+                                user?.currentStreak >= 5 ? 'text-orange-500 animate-bounce' : 
+                                user?.currentStreak >= 3 ? 'text-orange-400 animate-pulse' : 
+                                user?.currentStreak > 0 ? 'text-orange-300' : 'text-slate-800'
+                            }`} 
+                        />
+                    </div>
+                    {user?.currentStreak >= 3 && (
+                        <p className="text-[8px] text-orange-500/70 font-black uppercase animate-pulse">
+                            Bonus x{user.currentStreak >= 10 ? '2.0' : user.currentStreak >= 5 ? '1.5' : '1.2'}
+                        </p>
+                    )}
+                </div>
+
                 <div className="text-right">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Grade</p>
                     <div className={`flex items-center gap-1 justify-end font-bold italic text-sm ${currentRank.color}`}>
@@ -152,7 +182,7 @@ export default function LobbyDeParis() {
                         <h2 className="text-2xl font-bold leading-tight">{course.subject}</h2>
                         <p className="text-indigo-300 text-sm mb-6">{course.professor} • Début : {new Date(course.scheduledStartTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
 
-                        {/* --- NOUVEAU : INDICE DE LA LOUPE --- */}
+                        {/* INDICE DE LA LOUPE */}
                         {course.averageEstimate && hasMagnifier ? (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6 flex items-center gap-4 animate-pulse">
                                 <div className="p-2 bg-amber-500/20 rounded-lg">
