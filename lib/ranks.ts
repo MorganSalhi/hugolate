@@ -8,7 +8,7 @@ import {
   ShieldAlert, 
   Star, 
   ChevronUp, 
-  Cops 
+  Siren // Remplacement de Cops par Siren
 } from "lucide-react";
 
 export const POLICE_RANKS = [
@@ -20,7 +20,7 @@ export const POLICE_RANKS = [
   { min: 10000, label: "Commandant", icon: ShieldAlert, color: "text-purple-400", border: "border-purple-800/30" },
   { min: 15000, label: "Commissaire", icon: Star, color: "text-amber-400", border: "border-amber-800/30" },
   { min: 25000, label: "Commissaire Divisionnaire", icon: ChevronUp, color: "text-amber-500", border: "border-amber-600/30" },
-  { min: 50000, label: "Directeur des Services Actifs", icon: Cops, color: "text-red-500", border: "border-red-900/50" },
+  { min: 50000, label: "Directeur des Services Actifs", icon: Siren, color: "text-red-500", border: "border-red-900/50" },
 ];
 
 export function getPoliceRank(balance: number) {

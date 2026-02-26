@@ -1,7 +1,6 @@
 // prisma/schema.prisma
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -19,19 +18,19 @@ model User {
 
 model Course {
   id                 String       @id @default(cuid())
-  subject            String       // Matière (ex: Bavure)
-  professor          String       // Nom du prof
-  scheduledStartTime DateTime     // Heure de début officielle
-  actualArrivalTime  DateTime?    // Heure d'arrivée réelle d'Hugo
+  subject            String       
+  professor          String       
+  scheduledStartTime DateTime     
+  actualArrivalTime  DateTime?    
   status             CourseStatus @default(OPEN)
   bets               Bet[]
   totalPot           Int          @default(0)
 }
 
 enum CourseStatus {
-  OPEN      // Pari ouvert
-  LOCKED    // Cours commencé, Hugo est en route
-  FINISHED  // Hugo est arrivé, points distribués
+  OPEN      
+  LOCKED    
+  FINISHED  
 }
 
 model Bet {
