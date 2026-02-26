@@ -30,7 +30,6 @@ export async function POST(req: Request) {
     const actualMinutes = actualH * 60 + actualM;
 
     // 4. Préparation de la transaction globale
-    // On crée une liste d'opérations : mises à jour des paris + mises à jour des portefeuilles
     const betUpdates = course.bets.flatMap((bet) => {
       const guessedDate = new Date(bet.guessedTime);
       const guessedMinutes = guessedDate.getHours() * 60 + guessedDate.getMinutes();
@@ -38,23 +37,37 @@ export async function POST(req: Request) {
       // Récupération du score de précision (entre 0 et 1000)
       const baseScore = calculateHugoScore(actualMinutes, guessedMinutes);
 
-      // Calcul des gains proportionnels à la mise (bet.amount)
-      // 1000 points = 10x la mise | 100 points = 1x la mise
+      // Calcul des gains de base
       const gainsReels = Math.round((baseScore / 100) * bet.amount);
+      let gainsFinaux = gainsReels;
+
+      // APPLICATION DES EFFETS DE L'ARSENAL
+      if (bet.appliedItem === "WARRANT") {
+        // Le Mandat d'Arrêt double les gains (ou les pertes)
+        gainsFinaux = gainsReels * 2;
+      } else if (bet.appliedItem === "VEST") {
+        // Le Gilet Pare-Balles réduit la perte de 50% si le score est mauvais (< 1x la mise)
+        if (gainsReels < bet.amount) {
+          const perte = bet.amount - gainsReels;
+          gainsFinaux = Math.round(gainsReels + (perte / 2));
+        }
+      }
 
       return [
         prisma.bet.update({
           where: { id: bet.id },
-          data: { pointsEarned: gainsReels },
+          // ON UTILISE BIEN gainsFinaux ICI
+          data: { pointsEarned: gainsFinaux },
         }),
         prisma.user.update({
           where: { id: bet.userId },
-          data: { walletBalance: { increment: gainsReels } },
+          // ET ICI AUSSI POUR LE PORTEFEUILLE
+          data: { walletBalance: { increment: gainsFinaux } },
         }),
       ];
     });
 
-    // 5. Exécution de la transaction finale : Tout ou rien
+    // 5. Exécution de la transaction finale
     await prisma.$transaction([
       ...betUpdates,
       prisma.course.update({

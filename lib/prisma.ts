@@ -1,25 +1,27 @@
 // lib/prisma.ts
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
 
-const url = process.env.DATABASE_URL;
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-// DIAGNOSTIC : On affiche si l'URL est bien chargée
-if (!url) {
-  console.error("❌ ERREUR : La variable DATABASE_URL est vide !");
-} else {
-  console.log("✅ DATABASE_URL détectée (début) :", url.substring(0, 20) + "...");
-}
+const connectionString = `${process.env.DATABASE_URL}`
 
+// AJOUT DU BLOC SSL ICI
 const pool = new Pool({ 
-  connectionString: url,
-  ssl: { rejectUnauthorized: false }
-});
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false // Indispensable pour Neon
+  }
+})
 
-const adapter = new PrismaPg(pool);
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+const adapter = new PrismaPg(pool)
 
-export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+    log: ['query', 'error', 'warn'],
+  })
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

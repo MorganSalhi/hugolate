@@ -7,14 +7,16 @@ export async function GET() {
   try {
     const session = await getServerSession();
 
-    // Vérification de la session
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    // Récupération de l'utilisateur précis via son email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      // AJOUTE CE BLOC ICI :
+      include: {
+        items: true, // On demande à Prisma d'inclure les objets de l'inventaire
+      },
     });
 
     if (!user) {
@@ -30,55 +32,59 @@ export async function GET() {
 // 2. POST : Enregistrer un nouveau pari pour l'agent connecté
 export async function POST(req: Request) {
   const session = await getServerSession();
-
-  // Sécurité : Seuls les agents connectés peuvent parier
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Accès refusé. Identifiez-vous." }, { status: 401 });
-  }
+  if (!session?.user?.email) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   try {
-    const { courseId, time, amount } = await req.json();
-
-    // Identification de l'agent dans la base de données
-    const user = await prisma.user.findUnique({
+    const { courseId, time, amount, appliedItem } = await req.json(); // On récupère appliedItem
+    const user = await prisma.user.findUnique({ 
       where: { email: session.user.email },
+      include: { items: true } 
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "Agent introuvable" }, { status: 404 });
-    }
+    if (!user) return NextResponse.json({ error: "Agent introuvable" }, { status: 404 });
+    if (user.walletBalance < amount) return NextResponse.json({ error: "Solde insuffisant" }, { status: 400 });
 
-    // Vérification : L'agent a-t-il assez de Shekels ?
-    if (user.walletBalance < amount) {
-      return NextResponse.json({ error: "Solde insuffisant pour cette mise !" }, { status: 400 });
+    // Vérification de l'objet si utilisé
+    if (appliedItem) {
+      const inventoryItem = user.items.find(i => i.itemType === appliedItem);
+      if (!inventoryItem || inventoryItem.quantity <= 0) {
+        return NextResponse.json({ error: "Objet non disponible dans votre arsenal" }, { status: 400 });
+      }
     }
 
     const [hours, minutes] = time.split(":").map(Number);
     const guessedDate = new Date();
     guessedDate.setHours(hours, minutes, 0, 0);
 
-    // Transaction atomique : Création du pari et déduction du solde
-    const result = await prisma.$transaction([
-      prisma.bet.create({
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Déduire le solde
+      await tx.user.update({
+        where: { id: user.id },
+        data: { walletBalance: { decrement: amount } },
+      });
+
+      // 2. Consommer l'objet si utilisé
+      if (appliedItem) {
+        await tx.userItem.update({
+          where: { userId_itemType: { userId: user.id, itemType: appliedItem } },
+          data: { quantity: { decrement: 1 } },
+        });
+      }
+
+      // 3. Créer le pari avec l'objet lié
+      return await tx.bet.create({
         data: {
           userId: user.id,
-          courseId: courseId,
+          courseId,
           guessedTime: guessedDate,
-          amount: amount, 
+          amount,
+          appliedItem, // On enregistre l'équipement utilisé
         },
-      }),
-      prisma.user.update({
-        where: { id: user.id },
-        data: { walletBalance: { decrement: amount } }, 
-      }),
-    ]);
+      });
+    });
 
-    return NextResponse.json({ success: true, newBalance: result[1].walletBalance });
-  } catch (error: any) {
-    // Gestion des erreurs Prisma (ex: pari unique par cours)
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: "Rapport déjà transmis pour ce cours." }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Erreur serveur lors de l'enregistrement du pari" }, { status: 500 });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return NextResponse.json({ error: "Erreur lors du pari" }, { status: 500 });
   }
 }

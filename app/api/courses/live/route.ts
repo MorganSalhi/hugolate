@@ -1,32 +1,40 @@
+// app/api/courses/live/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const all = searchParams.get("all") === "true";
-
-    // CAS 1 : L'Admin demande tous les dossiers ouverts pour clôture (?all=true)
-    if (all) {
-      const openCourses = await prisma.course.findMany({
-        where: { status: "OPEN" },
-        orderBy: { scheduledStartTime: "desc" },
-      });
-      return NextResponse.json(openCourses);
-    }
-
-    // CAS 2 : Le Lobby demande le cours actif le plus récent pour parier
-    const liveCourse = await prisma.course.findFirst({
+    const course = await prisma.course.findFirst({
       where: { status: "OPEN" },
-      orderBy: { scheduledStartTime: "desc" },
+      orderBy: { scheduledStartTime: "asc" },
+      include: {
+        bets: {
+          select: { guessedTime: true } // On ne récupère que les heures
+        }
+      }
     });
 
-    if (!liveCourse) {
-      return NextResponse.json({ message: "Aucun cours actif" }, { status: 404 });
+    if (!course) return NextResponse.json(null);
+
+    // CALCUL DE LA MOYENNE
+    let averageTime = null;
+    if (course.bets.length > 0) {
+      const totalMinutes = course.bets.reduce((acc, bet) => {
+        const d = new Date(bet.guessedTime);
+        return acc + (d.getHours() * 60 + d.getMinutes());
+      }, 0);
+      
+      const avgMinutes = Math.round(totalMinutes / course.bets.length);
+      const hours = Math.floor(avgMinutes / 60);
+      const minutes = avgMinutes % 60;
+      averageTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
 
-    return NextResponse.json(liveCourse);
+    return NextResponse.json({
+      ...course,
+      averageEstimate: averageTime // On envoie la moyenne à l'interface
+    });
   } catch (error) {
-    return NextResponse.json({ error: "Erreur serveur lors de la récupération" }, { status: 500 });
+    return NextResponse.json({ error: "Erreur" }, { status: 500 });
   }
 }
