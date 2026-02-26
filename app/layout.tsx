@@ -1,7 +1,7 @@
 // app/layout.tsx
 import "./global.css";
 import Navbar from "@/components/Navbar";
-import { Providers } from "@/components/providers"; // Import de notre nouveau fichier
+import { Providers } from "@/components/Providers"; // Import de notre nouveau fichier
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

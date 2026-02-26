@@ -1,14 +1,6 @@
-// lib/ranks.ts
 import { 
-  Search, 
-  User, 
-  Shield, 
-  ShieldCheck, 
-  BadgeCheck, 
-  ShieldAlert, 
-  Star, 
-  ChevronUp, 
-  Siren // Remplacement de Cops par Siren
+  Search, User, Shield, ShieldCheck, BadgeCheck, 
+  ShieldAlert, Star, ChevronUp, Siren 
 } from "lucide-react";
 
 export const POLICE_RANKS = [
@@ -24,6 +16,26 @@ export const POLICE_RANKS = [
 ];
 
 export function getPoliceRank(balance: number) {
-  // On cherche le grade le plus élevé dont le minimum est inférieur au solde
   return [...POLICE_RANKS].reverse().find(rank => balance >= rank.min) || POLICE_RANKS[0];
+}
+
+export function getRankProgress(balance: number) {
+  const currentRank = getPoliceRank(balance);
+  const currentRankIndex = POLICE_RANKS.findIndex(r => r.label === currentRank.label);
+  const nextRank = POLICE_RANKS[currentRankIndex + 1];
+
+  if (!nextRank) return { isMax: true, needed: 0, percentage: 100 };
+
+  const currentRankMin = currentRank.min;
+  const needed = nextRank.min - balance;
+  const range = nextRank.min - currentRankMin;
+  const progress = ((balance - currentRankMin) / range) * 100;
+
+  return {
+    isMax: false,
+    needed,
+    percentage: Math.min(Math.max(progress, 0), 100),
+    nextLabel: nextRank.label,
+    nextMin: nextRank.min
+  };
 }
