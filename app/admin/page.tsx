@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useSession } from "next-auth/react"; // Pour vérifier l'identité de l'admin
+import { redirect } from "next/navigation";
 import { CreateCourseSchema, CreateUserSchema } from "@/lib/validations";
 import {
     ShieldAlert,
@@ -15,14 +17,19 @@ import {
     Users,
     UserPlus,
     HandCoins,
-    BookOpen
+    BookOpen,
+    Lock
 } from "lucide-react";
 
 export default function AdminPage() {
+    const { data: session, status } = useSession();
     const [activeTab, setActiveTab] = useState<"courses" | "users">("courses");
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
-    
+
+    // 🛡️ SÉCURITÉ : Remplace par ton email d'admin réel
+    const ADMIN_EMAIL = "morgangsxr1@gmail.com";
+
     // États pour les cours
     const [activeCourses, setActiveCourses] = useState<any[]>([]);
     const [actualTimes, setActualTimes] = useState<{ [key: string]: string }>({});
@@ -42,7 +49,7 @@ export default function AdminPage() {
                 fetch("/api/courses/live?all=true"),
                 fetch("/api/admin/users")
             ]);
-            
+
             if (coursesRes.ok) {
                 const data = await coursesRes.json();
                 setActiveCourses(Array.isArray(data) ? data : data.id ? [data] : []);
@@ -55,7 +62,19 @@ export default function AdminPage() {
         }
     };
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        if (status === "authenticated" && session?.user?.email === ADMIN_EMAIL) {
+            fetchData();
+        }
+    }, [status, session]);
+
+    // Redirections de sécurité
+    if (status === "loading") return (
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <Loader2 className="animate-spin text-indigo-500" size={48} />
+        </div>
+    );
+    if (!session || session.user?.email !== ADMIN_EMAIL) redirect("/lobby");
 
     // LOGIQUE COURS
     const onCreateCourse = async (data: any) => {
@@ -98,7 +117,7 @@ export default function AdminPage() {
                 body: JSON.stringify(data),
             });
             if (res.ok) {
-                alert("Nouvel agent recruté !");
+                alert("Nouvel agent recruté avec succès !");
                 userForm.reset();
                 fetchData();
             } else {
@@ -138,27 +157,18 @@ export default function AdminPage() {
                     </div>
                 </div>
 
-                {/* Sélecteur d'onglets */}
                 <div className="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
-                    <button 
-                        onClick={() => setActiveTab("courses")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "courses" ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300"}`}
-                    >
+                    <button onClick={() => setActiveTab("courses")} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "courses" ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300"}`}>
                         <BookOpen size={14} /> DOSSIERS
                     </button>
-                    <button 
-                        onClick={() => setActiveTab("users")}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "users" ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300"}`}
-                    >
+                    <button onClick={() => setActiveTab("users")} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === "users" ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-slate-300"}`}>
                         <Users size={14} /> AGENTS
                     </button>
                 </div>
             </div>
 
             {activeTab === "courses" ? (
-                /* INTERFACE GESTION DES COURS (Ton code existant optimisé) */
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Formulaire Création Cours */}
                     <section className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 shadow-xl h-fit">
                         <div className="flex items-center gap-2 mb-6 text-indigo-400">
                             <PlusCircle size={20} />
@@ -176,7 +186,6 @@ export default function AdminPage() {
                         </form>
                     </section>
 
-                    {/* Liste Résolution */}
                     <section className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 shadow-xl h-fit">
                         <div className="flex items-center gap-2 mb-6 text-green-400">
                             <CheckCircle2 size={20} />
@@ -188,12 +197,7 @@ export default function AdminPage() {
                                     <div key={course.id} className="bg-slate-950 border border-slate-800 rounded-2xl p-5">
                                         <h3 className="font-bold text-indigo-400 mb-4">{course.subject}</h3>
                                         <div className="flex items-end gap-3">
-                                            <input 
-                                                type="text" placeholder="HH:mm"
-                                                value={actualTimes[course.id] || ""}
-                                                onChange={(e) => setActualTimes(prev => ({...prev, [course.id]: e.target.value}))}
-                                                className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-2 outline-none font-mono"
-                                            />
+                                            <input type="text" placeholder="HH:mm" value={actualTimes[course.id] || ""} onChange={(e) => setActualTimes(prev => ({ ...prev, [course.id]: e.target.value }))} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-2 outline-none font-mono" />
                                             <button onClick={() => onResolveCourse(course.id)} className="bg-green-600 p-2.5 rounded-xl"><CheckCircle2 size={20} /></button>
                                         </div>
                                     </div>
@@ -203,9 +207,7 @@ export default function AdminPage() {
                     </section>
                 </div>
             ) : (
-                /* INTERFACE GESTION DES AGENTS */
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Formulaire Recrutement */}
                     <section className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 shadow-xl h-fit">
                         <div className="flex items-center gap-2 mb-6 text-indigo-400">
                             <UserPlus size={20} />
@@ -214,6 +216,10 @@ export default function AdminPage() {
                         <form onSubmit={userForm.handleSubmit(onCreateUser)} className="space-y-5">
                             <input {...userForm.register("name")} placeholder="Nom de l'agent" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
                             <input {...userForm.register("email")} placeholder="Email (Identifiant)" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600" size={16} />
+                                <input {...userForm.register("password")} type="password" placeholder="Mot de passe temporaire" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 pl-12 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                            </div>
                             <input {...userForm.register("initialBalance")} type="number" placeholder="Budget initial (₪)" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
                             <button disabled={loading} type="submit" className="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-bold flex items-center justify-center gap-2">
                                 {loading ? <Loader2 className="animate-spin" /> : <UserPlus size={20} />} ENRÔLER L'AGENT
@@ -221,7 +227,6 @@ export default function AdminPage() {
                         </form>
                     </section>
 
-                    {/* Liste des Agents & Injection */}
                     <section className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 shadow-xl h-fit">
                         <div className="flex items-center gap-2 mb-6 text-amber-400">
                             <HandCoins size={20} />
@@ -238,15 +243,8 @@ export default function AdminPage() {
                                         <p className="font-mono text-amber-400 font-bold">{agent.walletBalance} ₪</p>
                                     </div>
                                     <div className="flex gap-2">
-                                        <input 
-                                            type="number" placeholder="+ ₪"
-                                            value={creditAmounts[agent.id] || ""}
-                                            onChange={(e) => setCreditAmounts(prev => ({...prev, [agent.id]: parseInt(e.target.value)}))}
-                                            className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1 text-sm outline-none font-mono"
-                                        />
-                                        <button onClick={() => onInjectMoney(agent.id)} className="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl transition-all">
-                                            <HandCoins size={16} />
-                                        </button>
+                                        <input type="number" placeholder="+ ₪" value={creditAmounts[agent.id] || ""} onChange={(e) => setCreditAmounts(prev => ({ ...prev, [agent.id]: parseInt(e.target.value) }))} className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1 text-sm outline-none font-mono" />
+                                        <button onClick={() => onInjectMoney(agent.id)} className="bg-amber-600 hover:bg-amber-500 p-2 rounded-xl transition-all"><HandCoins size={16} /></button>
                                     </div>
                                 </div>
                             ))}

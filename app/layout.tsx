@@ -1,5 +1,7 @@
+// app/layout.tsx
 import "./global.css";
-import Navbar from "@/components/Navbar"; // Importation de la barre
+import Navbar from "@/components/Navbar";
+import { Providers } from "@/components/providers"; // Import de notre nouveau fichier
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,10 +17,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased bg-slate-950 text-slate-100">
-        <main className="pb-24"> {/* Padding en bas pour ne pas cacher le contenu sous la Navbar */}
-          {children}
-        </main>
-        <Navbar /> {/* La barre est ici ! */}
+        <Providers> {/* On enveloppe tout ici */}
+          <main className="pb-24">
+            {children}
+          </main>
+          <Navbar />
+        </Providers>
       </body>
     </html>
   );

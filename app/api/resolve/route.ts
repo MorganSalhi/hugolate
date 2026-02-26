@@ -34,17 +34,22 @@ export async function POST(req: Request) {
     const betUpdates = course.bets.flatMap((bet) => {
       const guessedDate = new Date(bet.guessedTime);
       const guessedMinutes = guessedDate.getHours() * 60 + guessedDate.getMinutes();
-      
-      const pointsGagnes = calculateHugoScore(actualMinutes, guessedMinutes);
+
+      // Récupération du score de précision (entre 0 et 1000)
+      const baseScore = calculateHugoScore(actualMinutes, guessedMinutes);
+
+      // Calcul des gains proportionnels à la mise (bet.amount)
+      // 1000 points = 10x la mise | 100 points = 1x la mise
+      const gainsReels = Math.round((baseScore / 100) * bet.amount);
 
       return [
         prisma.bet.update({
           where: { id: bet.id },
-          data: { pointsEarned: pointsGagnes },
+          data: { pointsEarned: gainsReels },
         }),
         prisma.user.update({
           where: { id: bet.userId },
-          data: { walletBalance: { increment: pointsGagnes } },
+          data: { walletBalance: { increment: gainsReels } },
         }),
       ];
     });
@@ -54,7 +59,7 @@ export async function POST(req: Request) {
       ...betUpdates,
       prisma.course.update({
         where: { id: courseId },
-        data: { 
+        data: {
           status: "FINISHED",
           actualArrivalTime: new Date(new Date().setHours(actualH, actualM, 0, 0))
         },

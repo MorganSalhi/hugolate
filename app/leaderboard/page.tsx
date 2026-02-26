@@ -2,8 +2,16 @@
 import { prisma } from "@/lib/prisma";
 import { getPoliceRank } from "@/lib/ranks";
 import { TrendingUp, Shield, AlertCircle } from "lucide-react";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 
 export default async function LeaderboardPage() {
+    // Sécurité : Vérification de la session avant d'accéder aux données
+    const session = await getServerSession();
+    if (!session) {
+        redirect("/login");
+    }
+
     // Récupération des 20 meilleurs agents avec tri par solde décroissant
     const users = await prisma.user.findMany({
         orderBy: {

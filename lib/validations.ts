@@ -18,5 +18,6 @@ export const CreateCourseSchema = z.object({
 export const CreateUserSchema = z.object({
   name: z.string().min(2, "Le nom est trop court"),
   email: z.string().email("Email invalide"),
+  password: z.string().min(6, "6 caractères minimum"), // Ajoute cette ligne
   initialBalance: z.preprocess((val) => Number(val), z.number().min(0, "Le solde doit être positif")),
 });
