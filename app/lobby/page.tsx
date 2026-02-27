@@ -12,10 +12,12 @@ import {
     Shield, 
     Search, 
     Gavel,
-    Flame // Ajout de la flamme pour la série
+    Flame,
+    Radio // Icône pour le signal radio
 } from "lucide-react";
 import { BetSchema } from "@/lib/validations";
 import { getPoliceRank } from "@/lib/ranks";
+import toast from "react-hot-toast"; // Import indispensable
 
 // Configuration visuelle des objets pour le Lobby
 const ITEM_ASSETS: Record<string, { icon: any, color: string, label: string }> = {
@@ -30,6 +32,7 @@ export default function LobbyDeParis() {
     const [loading, setLoading] = useState(true);
     const [betting, setBetting] = useState(false);
     const [selectedItem, setSelectedItem] = useState<string | null>(null);
+    const [activities, setActivities] = useState([]);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
         resolver: zodResolver(BetSchema),
@@ -39,15 +42,20 @@ export default function LobbyDeParis() {
     useEffect(() => {
         async function initLobby() {
             try {
-                const [courseRes, betRes] = await Promise.all([
+                // On ajoute l'appel à l'API d'activité dans le Promise.all
+                const [courseRes, betRes, actRes] = await Promise.all([
                     fetch("/api/courses/live"),
-                    fetch("/api/bets") 
+                    fetch("/api/bets"),
+                    fetch("/api/activity") // <--- Nouvelle API d'activité
                 ]);
 
                 if (courseRes.ok) setCourse(await courseRes.json());
 
                 const betData = await betRes.json();
                 if (betData.user) setUser(betData.user);
+
+                // On remplit la liste des activités récentes
+                if (actRes.ok) setActivities(await actRes.json());
             } catch (e) {
                 console.error("Erreur de synchro Lobby");
             } finally {
@@ -75,7 +83,11 @@ export default function LobbyDeParis() {
             const result = await res.json();
 
             if (res.ok) {
-                alert(`Pari validé ! Nouveau solde : ${result.newBalance} ₪`);
+                toast.success(`Rapport d'enquête validé ! (-${data.amount} ₪)`, {
+                    style: { background: '#0f172a', color: '#fff', border: '1px solid #1e293b' },
+                    icon: '📑'
+                });
+
                 setUser((prev: any) => ({ 
                     ...prev, 
                     walletBalance: result.newBalance,
@@ -83,10 +95,14 @@ export default function LobbyDeParis() {
                 setSelectedItem(null);
                 reset();
             } else {
-                alert(result.error || "Erreur lors du pari");
+                toast.error(result.error || "Erreur lors du pari", {
+                    style: { background: '#0f172a', color: '#fff', border: '1px solid #1e293b' }
+                });
             }
         } catch (error) {
-            alert("Serveur injoignable");
+            toast.error("Serveur de la Brigade injoignable", {
+                style: { background: '#0f172a', color: '#fff', border: '1px solid #1e293b' }
+            });
         } finally {
             setBetting(false);
         }
@@ -116,7 +132,6 @@ export default function LobbyDeParis() {
 
             {/* Portefeuille, SÉRIE et Grade */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6 flex justify-between items-center shadow-2xl relative overflow-hidden">
-                {/* Décoration de série en fond si l'agent est en feu */}
                 {user?.currentStreak >= 3 && (
                     <div className="absolute -right-4 -top-4 opacity-[0.03] rotate-12">
                         <Flame size={120} className="text-orange-500" />
@@ -135,7 +150,6 @@ export default function LobbyDeParis() {
                     </div>
                 </div>
 
-                {/* NOUVEAU : INDICATEUR DE SÉRIE (STREAK) */}
                 <div className="flex flex-col items-center px-4 border-x border-slate-800/50">
                     <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Série</p>
                     <div className="flex items-center gap-1">
@@ -182,7 +196,6 @@ export default function LobbyDeParis() {
                         <h2 className="text-2xl font-bold leading-tight">{course.subject}</h2>
                         <p className="text-indigo-300 text-sm mb-6">{course.professor} • Début : {new Date(course.scheduledStartTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
 
-                        {/* INDICE DE LA LOUPE */}
                         {course.averageEstimate && hasMagnifier ? (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 mb-6 flex items-center gap-4 animate-pulse">
                                 <div className="p-2 bg-amber-500/20 rounded-lg">
@@ -216,7 +229,6 @@ export default function LobbyDeParis() {
                                 </div>
                             </div>
 
-                            {/* SECTION ARSENAL */}
                             <div className="space-y-3">
                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Équipement de Brigade</label>
                                 <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -264,6 +276,41 @@ export default function LobbyDeParis() {
                     <p className="text-slate-600 text-[10px] mt-2">En attente d'ouverture par le Commissariat.</p>
                 </div>
             )}
+
+            {/* LE MUR DE LA BRIGADE DYNAMIQUE */}
+            <div className="mt-10 border-t border-slate-900 pt-8">
+                <div className="flex items-center gap-2 mb-4">
+                    <Radio size={14} className="text-indigo-500" />
+                    <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Réseau de Renseignements</h3>
+                </div>
+                
+                <div className="space-y-3">
+                    {/* Signal Radio Pulsant constant */}
+                    <div className="bg-slate-900/30 border border-slate-800/50 rounded-xl p-3 flex items-center gap-3 animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                        <p className="text-[10px] text-slate-400 font-medium italic">
+                            Canal Alpha : Transmission sécurisée activée...
+                        </p>
+                    </div>
+                    
+                    {/* Affichage des activités réelles */}
+                    {activities.length > 0 ? activities.map((act: any) => (
+                        <div key={act.id} className="bg-slate-900/40 border border-slate-800/50 rounded-xl p-3 flex items-center justify-between animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-1.5 h-1.5 rounded-full ${act.type === "WIN" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-indigo-500"}`} />
+                                <p className="text-[10px] text-slate-300">
+                                    <span className="font-bold text-indigo-400">L'Agent {act.user}</span> {act.type === "WIN" ? "a empoché une prime sur" : "enquête sur"} <span className="text-slate-100 italic">{act.subject}</span>
+                                </p>
+                            </div>
+                            <span className="text-[8px] text-slate-600 font-mono italic">
+                                {new Date(act.time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        </div>
+                    )) : (
+                        <p className="text-[9px] text-slate-600 italic pl-2">Silence radio sur le réseau...</p>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

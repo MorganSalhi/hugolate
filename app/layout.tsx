@@ -1,7 +1,8 @@
 // app/layout.tsx
 import "./global.css";
 import Navbar from "@/components/Navbar";
-import { Providers } from "@/components/Providers"; // Import de notre nouveau fichier
+import { Providers } from "@/components/Providers";
+import { Toaster } from "react-hot-toast"; // Un seul import ici
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -17,10 +18,12 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className="antialiased bg-slate-950 text-slate-100">
-        <Providers> {/* On enveloppe tout ici */}
+        <Providers>
           <main className="pb-24">
             {children}
           </main>
+          {/* Le Toaster est placé ici, une seule fois */}
+          <Toaster position="top-center" reverseOrder={false} />
           <Navbar />
         </Providers>
       </body>

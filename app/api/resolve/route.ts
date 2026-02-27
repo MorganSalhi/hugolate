@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateHugoScore } from "@/lib/scoring";
+import { checkAndAwardBadges } from "@/lib/badges";
 
 export async function POST(req: Request) {
   try {
@@ -10,12 +11,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Données de temps invalides" }, { status: 400 });
     }
 
-    // 2. Récupération du dossier AVEC les infos utilisateurs pour les séries
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       include: { 
         bets: {
-          include: { user: true } // Indispensable pour connaître la série de l'agent
+          include: { user: true } 
         } 
       },
     });
@@ -26,28 +26,39 @@ export async function POST(req: Request) {
     const [actualH, actualM] = actualTime.split(":").map(Number);
     const actualMinutes = actualH * 60 + actualM;
 
+    // --- LOGIQUE WANTED LIST ---
+    // 1. On identifie qui était le n°1 juste avant ce verdict
+    const wantedTarget = await prisma.user.findFirst({
+        orderBy: { walletBalance: 'desc' }
+    });
+
+    // 2. On regarde si ce leader a parié sur ce cours et quel est son score
+    const wantedBet = course.bets.find(b => b.userId === wantedTarget?.id);
+    let wantedScore = 0;
+    if (wantedBet) {
+        const wDate = new Date(wantedBet.guessedTime);
+        const wMin = wDate.getHours() * 60 + wDate.getMinutes();
+        wantedScore = calculateHugoScore(actualMinutes, wMin);
+    }
+    // ----------------------------
+
     const betUpdates = course.bets.flatMap((bet) => {
       const guessedDate = new Date(bet.guessedTime);
       const guessedMinutes = guessedDate.getHours() * 60 + guessedDate.getMinutes();
-
-      // A. Score de base
       const baseScore = calculateHugoScore(actualMinutes, guessedMinutes);
       
-      // B. Calcul du Bonus de Série (Streak)
       let streakBonus = 1;
       const currentStreak = bet.user.currentStreak;
       
-      if (currentStreak >= 10) streakBonus = 2.0;      // Élite : x2
-      else if (currentStreak >= 5) streakBonus = 1.5;  // Confirmé : x1.5
-      else if (currentStreak >= 3) streakBonus = 1.2;  // Régulier : x1.2
+      if (currentStreak >= 10) streakBonus = 2.0;
+      else if (currentStreak >= 5) streakBonus = 1.5;
+      else if (currentStreak >= 3) streakBonus = 1.2;
 
-      // C. Calcul des gains avec série
       let gainsReels = Math.round((baseScore / 100) * bet.amount * streakBonus);
       let gainsFinaux = gainsReels;
 
-      // D. Application de l'Arsenal (Items)
       if (bet.appliedItem === "WARRANT") {
-        gainsFinaux = gainsReels * 2;
+        gainsFinaux *= 2;
       } else if (bet.appliedItem === "VEST") {
         if (gainsReels < bet.amount) {
           const perte = bet.amount - gainsReels;
@@ -55,16 +66,16 @@ export async function POST(req: Request) {
         }
       }
 
-      // E. Mise à jour de la série pour la prochaine fois
-      let nextStreak = currentStreak;
-      if (baseScore >= 700) {
-        nextStreak += 1;
-      } else if (baseScore < 300) {
-        nextStreak = 0; // La série est brisée !
+      // --- APPLICATION DE LA PRIME WANTED ---
+      // Si l'agent n'est pas lui-même la cible et qu'il a un meilleur score que la cible (qui doit avoir parié)
+      if (bet.userId !== wantedTarget?.id && wantedScore > 0 && baseScore > wantedScore) {
+          gainsFinaux += 5000; // Prime de capture
       }
+      // --------------------------------------
 
-      // Vérification du record personnel
-      const newBestStreak = nextStreak > bet.user.bestStreak ? nextStreak : bet.user.bestStreak;
+      let nextStreak = currentStreak;
+      if (baseScore >= 700) nextStreak += 1;
+      else if (baseScore < 300) nextStreak = 0;
 
       return [
         prisma.bet.update({
@@ -76,7 +87,7 @@ export async function POST(req: Request) {
           data: { 
             walletBalance: { increment: gainsFinaux },
             currentStreak: nextStreak,
-            bestStreak: newBestStreak
+            bestStreak: nextStreak > bet.user.bestStreak ? nextStreak : bet.user.bestStreak
           },
         }),
       ];
@@ -92,6 +103,22 @@ export async function POST(req: Request) {
         },
       }),
     ]);
+
+    for (const bet of course.bets) {
+      const gDate = new Date(bet.guessedTime);
+      const gMinutes = gDate.getHours() * 60 + gDate.getMinutes();
+      const score = calculateHugoScore(actualMinutes, gMinutes);
+      
+      if (score === 1000) {
+        await prisma.badge.upsert({
+          where: { userId_type: { userId: bet.userId, type: "SNIPER" } },
+          update: {},
+          create: { userId: bet.userId, type: "SNIPER" }
+        });
+      }
+      
+      await checkAndAwardBadges(bet.userId);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
