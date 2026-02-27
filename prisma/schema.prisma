@@ -14,7 +14,7 @@ model User {
   email         String     @unique
   password      String?
   walletBalance Int        @default(1000)
-  role          Role       @default(USER)
+  role          Role       @default(USER) // Ajoutez cette ligne
   bets          Bet[]
   items         UserItem[] 
   badges        Badge[]    
