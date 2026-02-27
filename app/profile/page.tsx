@@ -57,7 +57,7 @@ export default async function ProfilePage() {
             <RankIcon size={32} />
           </div>
           <div>
-            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Grade Actuel</p>
+            <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Échelon de Bavure</p>
             <h2 className={`text-xl font-black uppercase italic ${rank.color}`}>{rank.label}</h2>
           </div>
         </div>
@@ -65,7 +65,7 @@ export default async function ProfilePage() {
         {!progress.isMax ? (
           <div className="relative z-10">
             <div className="flex justify-between items-end mb-2">
-              <p className="text-[10px] font-black uppercase text-slate-400">Progression vers {progress.nextLabel}</p>
+              <p className="text-[10px] font-black uppercase text-slate-400">Corruption nécessaire pour le grade {progress.nextLabel}</p>
               <p className="text-xs font-mono font-bold text-indigo-400">-{progress.needed.toLocaleString()} ₪</p>
             </div>
             <div className="h-4 w-full bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
@@ -86,14 +86,14 @@ export default async function ProfilePage() {
         <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
           <Icons.Flame className="text-orange-500" size={24} />
           <div>
-            <p className="text-[9px] text-slate-500 uppercase font-bold">Série Actuelle</p>
+            <p className="text-[9px] text-slate-500 uppercase font-bold">Jours sans signalement IGPN</p>
             <p className="text-lg font-mono font-bold">{user.currentStreak}</p>
           </div>
         </div>
         <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 flex items-center gap-3">
           <Icons.Trophy className="text-amber-500" size={24} />
           <div>
-            <p className="text-[9px] text-slate-500 uppercase font-bold">Record de Série</p>
+            <p className="text-[9px] text-slate-500 uppercase font-bold">Record d'immunité diplomatique</p>
             <p className="text-lg font-mono font-bold">{user.bestStreak}</p>
           </div>
         </div>
@@ -108,14 +108,14 @@ export default async function ProfilePage() {
         </div>
         <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4">
           <Icons.Award className="text-amber-500 mb-2" size={20} />
-          <p className="text-[9px] text-slate-500 uppercase font-bold">Missions Saisies</p>
+          <p className="text-[9px] text-slate-500 uppercase font-bold">PV dressés au pif</p>
           <p className="text-lg font-mono font-bold">{user._count.bets} Rapports</p>
         </div>
       </div>
 
       {/* SECTION MÉDAILLES DE SERVICE (BADGES) */}
       <div className="mt-8">
-        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-4">Décorations & États de Service</h3>
+        <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] mb-4">Distinctions pour Abus Notoires</h3>
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
           {Object.entries(BADGE_DEFINITIONS).map(([type, details]) => {
             const isUnlocked = unlockedBadges.has(type);
@@ -161,7 +161,7 @@ export default async function ProfilePage() {
                 <Icons.Target size={14} className="text-indigo-500" />
                 <h2 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Renseignement et Analyse</h2>
             </div>
-            <p className="text-lg font-black italic uppercase">Bureau des Statistiques</p>
+            <p className="text-lg font-black italic uppercase">Rapport de matraquage</p>
         </header>
         <ProfileStats bets={user.bets} />
       </div>
