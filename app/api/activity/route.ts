@@ -14,10 +14,11 @@ export async function GET() {
     });
 
     // On formate les données pour le flux
-    const formattedActivity = activities.map(bet => ({
+    // Ajout du type pour 'bet' afin de corriger l'erreur Vercel
+    const formattedActivity = activities.map((bet: any) => ({
       id: bet.id,
-      user: bet.user.name,
-      subject: bet.course.subject,
+      user: bet.user?.name || "Anonyme",
+      subject: bet.course?.subject || "Sujet inconnu",
       amount: bet.amount,
       type: bet.pointsEarned && bet.pointsEarned > 0 ? "WIN" : "BET",
       time: bet.createdAt
@@ -25,6 +26,7 @@ export async function GET() {
 
     return NextResponse.json(formattedActivity);
   } catch (error) {
+    console.error("Erreur API Activity:", error);
     return NextResponse.json({ error: "Erreur de flux" }, { status: 500 });
   }
 }
