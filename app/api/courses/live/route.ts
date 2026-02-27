@@ -9,17 +9,19 @@ export async function GET() {
       orderBy: { scheduledStartTime: "asc" },
       include: {
         bets: {
-          select: { guessedTime: true } // On ne récupère que les heures
+          select: { guessedTime: true }
         }
       }
     });
 
     if (!course) return NextResponse.json(null);
 
-    // CALCUL DE LA MOYENNE
-    let averageTime = null;
+    // Correction : On indique explicitement que la variable peut être string ou null
+    let averageTime: string | null = null;
+
     if (course.bets.length > 0) {
-      const totalMinutes = course.bets.reduce((acc, bet) => {
+      // Ajout du type :any pour éviter l'erreur de type implicite rencontrée précédemment sur Vercel
+      const totalMinutes = course.bets.reduce((acc: number, bet: any) => {
         const d = new Date(bet.guessedTime);
         return acc + (d.getHours() * 60 + d.getMinutes());
       }, 0);
@@ -32,9 +34,10 @@ export async function GET() {
 
     return NextResponse.json({
       ...course,
-      averageEstimate: averageTime // On envoie la moyenne à l'interface
+      averageEstimate: averageTime
     });
   } catch (error) {
+    console.error("Erreur API Live Course:", error);
     return NextResponse.json({ error: "Erreur" }, { status: 500 });
   }
 }
