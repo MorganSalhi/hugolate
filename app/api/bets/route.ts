@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
     // Vérification de l'objet si utilisé
     if (appliedItem) {
-      const inventoryItem = user.items.find(i => i.itemType === appliedItem);
+      const inventoryItem = user.items.find((i: any) => i.itemType === appliedItem);
       if (!inventoryItem || inventoryItem.quantity <= 0) {
         return NextResponse.json({ error: "Objet non disponible dans votre arsenal" }, { status: 400 });
       }
