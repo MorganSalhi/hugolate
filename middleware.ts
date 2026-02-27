@@ -1,6 +1,13 @@
-export { default } from "next-auth/middleware";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export const config = { 
-  // On protège toutes les routes sauf le login et les fichiers statiques
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+// Cette fonction est obligatoire et doit être exportée
+export function middleware(request: NextRequest) {
+  // Par défaut, on laisse passer la requête
+  return NextResponse.next();
+}
+
+// Optionnel : vous pouvez définir les routes concernées ici
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
