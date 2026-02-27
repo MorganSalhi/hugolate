@@ -1,39 +1,39 @@
 import { prisma } from "./prisma";
 
 export const BADGE_DEFINITIONS: Record<string, { label: string, icon: string, description: string, color: string }> = {
-  FIRST_BET: { 
-    label: "Recrue", 
-    description: "Premier rapport d'enquête archivé", 
+FIRST_BET: { 
+    label: "Première Bavure", 
+    description: "Premier rapport d'enquête déposé sur le bureau du commissaire.", 
     icon: "Flag", 
     color: "text-blue-400" 
   },
   SNIPER: { 
-    label: "Sniper", 
-    description: "Heure exacte devinée (Score 1000)", 
+    label: "Tireur de LBD", 
+    description: "Précision chirurgicale : 1000 points. Hugo ne vous échappe pas.", 
     icon: "Target", 
     color: "text-red-500" 
   },
   BIG_WINNER: { 
-    label: "Gros Bonnet", 
-    description: "Pari de 5000₪ ou plus réussi avec profit", 
+    label: "Corruption au Sommet", 
+    description: "Pari de 5000₪ réussi. Vous avez détourné le fonds de saisie.", 
     icon: "Banknote", 
     color: "text-emerald-400" 
   },
   HOT_STREAK: { 
-    label: "En Feu", 
-    description: "Série de 10 victoires consécutives", 
+    label: "Matraque d'Or", 
+    description: "10 victoires consécutives. Vous êtes l'idole du commissariat.", 
     icon: "Flame", 
     color: "text-orange-500" 
   },
   VETERAN: { 
-    label: "Vétéran", 
-    description: "50 missions d'investigation effectuées", 
+    label: "Placardisé", 
+    description: "50 missions effectuées. Vous connaissez tous les kebabs du secteur.", 
     icon: "ShieldCheck", 
     color: "text-indigo-400" 
   },
   MILLIONAIRE: { 
-    label: "Millionnaire", 
-    description: "A atteint un solde de 1 000 000 ₪", 
+    label: "Préfet de Police", 
+    description: "Solde de 1 000 000 ₪. Vous possédez la ville.", 
     icon: "Gem", 
     color: "text-amber-400" 
   }
